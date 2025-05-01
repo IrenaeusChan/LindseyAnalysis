@@ -173,7 +173,7 @@ log "Cutadapt trimming completed successfully."
 log "Running Python script for further analysis."
 python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
 python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_final_mapped_MAPQ42_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
-python3 ${SCRIPT_DIR}/logfitness_ALC1.py -s1 ${library_name}_initial -s2 ${library_name}_final -l ${library_name} --sequence ${library_aa_sequence}
+python3 ${SCRIPT_DIR}/logfitness_ALC1.py -s1 ${library_name}_initial_mapped_MAPQ42_merged_trimmed -s2 ${library_name}_final_mapped_MAPQ42_merged_trimmed -l ${library_name} --sequence ${library_aa_sequence}
 
 # Remove temporary files
 log "Cleaning up temporary files."
