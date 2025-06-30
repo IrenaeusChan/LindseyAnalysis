@@ -10,6 +10,7 @@ parser.add_argument("-s1", "--string1", type=str, required=True)
 parser.add_argument("-s2", "--string2", type=str, required=True)
 parser.add_argument("-l", "--library", type=str, required=True)
 parser.add_argument("--sequence", type=str, required=True)
+parser.add_argument("-o", "--output", type=str, required=True)
 print('start tabulation')
 
 args = parser.parse_args()
@@ -56,7 +57,14 @@ table1_num = table1.drop('Amino_Acid', axis=1)
 table2 = pd.read_csv("{}.csv".format(args.string2), keep_default_na=False)
 table2_num = table2.drop('Amino_Acid', axis=1)
 
+# Get the base name of the input files
+string1_base = args.string1.split('/')[-1]
+string2_base = args.string2.split('/')[-1]
+
+print("Successfully read in the two tables: {} and {}".format(string1_base, string2_base))
+
 #Call the ratioizer function for the two tables
+print("Calculating log10 ratios...")
 table_log = ratioizer(table1_num, table2_num)
 
 #Insert a column at position 0 in the table
@@ -68,8 +76,9 @@ AminoAci_new =('*', 'A', 'C', 'D', 'E', 'F', \
 table_log.insert(0, 'Amino Acid', AminoAci_new)
 
 #call the subtractor function on the log10 ratio table
+print("Subtracting WT values from mutant log10 ratios...")
 table_log_dif = Substractor(table_log, codon)
 
 #export final table
 table_log_dif_removeX = table_log_dif.drop(axis=0, index=20)
-table_log_dif_removeX.to_csv('diflog_{}_{}.csv'.format(args.string1,args.string2), index=False)
+table_log_dif_removeX.to_csv('{}/diflog_{}_{}.csv'.format(args.output,string1_base,string2_base), index=False)
