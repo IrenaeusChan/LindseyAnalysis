@@ -92,18 +92,18 @@ final_fastq2=${working_dir}/${library_name}/$(grep ${library_name} ${input_tsv} 
 check_file ${fastq2}
 
 # Extracting other parameters from the input TSV
-fwd_adapter=$(grep ${library_name} ${input_tsv} | cut -f 7)
-fwd_rc_adapter=$(grep ${library_name} ${input_tsv} | cut -f 8)
-rev_adapter=$(grep ${library_name} ${input_tsv} | cut -f 9)
-rev_rc_adapter=$(grep ${library_name} ${input_tsv} | cut -f 10)
+fwd_adapter=$(grep ${library_name} ${input_tsv} | cut -f 7 | tr -d '[:space:]')
+fwd_rc_adapter=$(grep ${library_name} ${input_tsv} | cut -f 8 | tr -d '[:space:]')
+rev_adapter=$(grep ${library_name} ${input_tsv} | cut -f 9 | tr -d '[:space:]')
+rev_rc_adapter=$(grep ${library_name} ${input_tsv} | cut -f 10 | tr -d '[:space:]')
 
 adapter1="${fwd_adapter}...${rev_rc_adapter}"
 adapter2="${rev_adapter}...${fwd_rc_adapter}"
 
-syn_codon=$(grep ${library_name} ${input_tsv} | cut -f 11)
-wt_codon=$(grep ${library_name} ${input_tsv} | cut -f 12)
-library_dna_sequence=$(grep ${library_name} ${input_tsv} | cut -f 13)
-library_aa_sequence=$(grep ${library_name} ${input_tsv} | cut -f 14)
+syn_codon=$(grep ${library_name} ${input_tsv} | cut -f 11 | tr -d '[:space:]')
+wt_codon=$(grep ${library_name} ${input_tsv} | cut -f 12 | tr -d '[:space:]')
+library_dna_sequence=$(grep ${library_name} ${input_tsv} | cut -f 13 | tr -d '[:space:]')
+library_aa_sequence=$(grep ${library_name} ${input_tsv} | cut -f 14 | tr -d '[:space:]')
 
 log "Input TSV: ${input_tsv}"
 log "Reference: ${reference}"

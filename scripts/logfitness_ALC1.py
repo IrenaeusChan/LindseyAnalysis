@@ -34,6 +34,7 @@ WT = args.sequence
 #ratioizer takes the ratio between RCPM of the selection/no-selection datasets and takes then takes the log10 value.
 def ratioizer(table1, table2):
     output_table = table1 / table2
+    # output_table = output_table.replace(0, np.nan)  # Replace zeros with NaN to avoid log10 warnings
     output_table_log = output_table.apply(lambda x: np.log10(x) if np.issubdtype(x.dtype, np.number) else x)
     return output_table_log
 
