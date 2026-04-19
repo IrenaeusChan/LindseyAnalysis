@@ -104,6 +104,7 @@ syn_codon=$(grep ${library_name} ${input_tsv} | cut -f 11 | tr -d '[:space:]')
 wt_codon=$(grep ${library_name} ${input_tsv} | cut -f 12 | tr -d '[:space:]')
 library_dna_sequence=$(grep ${library_name} ${input_tsv} | cut -f 13 | tr -d '[:space:]')
 library_aa_sequence=$(grep ${library_name} ${input_tsv} | cut -f 14 | tr -d '[:space:]')
+quality_threshold=$(grep ${library_name} ${input_tsv} | cut -f 15 | tr -d '[:space:]')
 
 log "Input TSV: ${input_tsv}"
 log "Reference: ${reference}"
@@ -138,9 +139,9 @@ log "Bowtie2 alignment completed successfully."
 
 # Part 2 - BAM Quality Check
 log "Converting SAM to BAM."
-samtools view -@ ${threads} -Sb -f2 -q42 ${tmp_dir}/${library_name}_initial_aligned.sam > ${out_dir}/${library_name}_initial_aligned_mapped_MAPQ42.bam
+samtools view -@ ${threads} -Sb -f2 -q${quality_threshold} ${tmp_dir}/${library_name}_initial_aligned.sam > ${out_dir}/${library_name}_initial_aligned_mapped_MAPQ${quality_threshold}.bam
 samtools view -@ ${threads} ${tmp_dir}/${library_name}_initial_aligned.sam | cut -f 5 | sort | uniq -c | sort -n | awk '{printf("MAPQ:%s\t%d\n",$2,$1);}'
-samtools view -@ ${threads} -Sb -f2 -q42 ${tmp_dir}/${library_name}_final_aligned.sam > ${out_dir}/${library_name}_final_aligned_mapped_MAPQ42.bam
+samtools view -@ ${threads} -Sb -f2 -q${quality_threshold} ${tmp_dir}/${library_name}_final_aligned.sam > ${out_dir}/${library_name}_final_aligned_mapped_MAPQ${quality_threshold}.bam
 samtools view -@ ${threads} ${tmp_dir}/${library_name}_final_aligned.sam | cut -f 5 | sort | uniq -c | sort -n | awk '{printf("MAPQ:%s\t%d\n",$2,$1);}'
 if [ $? -ne 0 ]; then echo "ERROR: BAM quality check failed."; exit 1; fi
 log "BAM quality check completed successfully."
@@ -150,34 +151,34 @@ log "Converting BAM to FASTQ."
 # I changed this from bedtools bamtofastq to samtools fastq because bedtools does not support multithreading
 # Samtools finished in ~1 Minute
 # Bedtools finished in ~10 Minutes
-samtools fastq -@ ${threads} -1 ${tmp_dir}/${library_name}_initial_mapped_MAPQ42_R1.fastq -2 ${tmp_dir}/${library_name}_initial_mapped_MAPQ42_R2.fastq -N ${out_dir}/${library_name}_initial_aligned_mapped_MAPQ42.bam
-samtools fastq -@ ${threads} -1 ${tmp_dir}/${library_name}_final_mapped_MAPQ42_R1.fastq -2 ${tmp_dir}/${library_name}_final_mapped_MAPQ42_R2.fastq -N ${out_dir}/${library_name}_final_aligned_mapped_MAPQ42.bam
+samtools fastq -@ ${threads} -1 ${tmp_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_R1.fastq -2 ${tmp_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_R2.fastq -N ${out_dir}/${library_name}_initial_aligned_mapped_MAPQ${quality_threshold}.bam
+samtools fastq -@ ${threads} -1 ${tmp_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_R1.fastq -2 ${tmp_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_R2.fastq -N ${out_dir}/${library_name}_final_aligned_mapped_MAPQ${quality_threshold}.bam
 if [ $? -ne 0 ]; then echo "ERROR: BAM to FASTQ conversion failed."; exit 1; fi
 log "BAM to FASTQ conversion completed successfully."
 
 # Part 4 - pandaseq to merge
 log "Running Pandaseq to merge FASTQ files."
-pandaseq -B -f ${tmp_dir}/${library_name}_initial_mapped_MAPQ42_R1.fastq -r ${tmp_dir}/${library_name}_initial_mapped_MAPQ42_R2.fastq -w ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged.fasta -g ${tmp_dir}/pandaseq.log -T ${threads}
-pandaseq -B -f ${tmp_dir}/${library_name}_final_mapped_MAPQ42_R1.fastq -r ${tmp_dir}/${library_name}_final_mapped_MAPQ42_R2.fastq -w ${out_dir}/${library_name}_final_mapped_MAPQ42_merged.fasta -g ${tmp_dir}/pandaseq.log -T ${threads}
+pandaseq -B -f ${tmp_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_R1.fastq -r ${tmp_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_R2.fastq -w ${out_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_merged.fasta -g ${tmp_dir}/pandaseq.log -T ${threads}
+pandaseq -B -f ${tmp_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_R1.fastq -r ${tmp_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_R2.fastq -w ${out_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_merged.fasta -g ${tmp_dir}/pandaseq.log -T ${threads}
 if [ $? -ne 0 ]; then echo "ERROR: Pandaseq merging failed."; exit 1; fi
 log "Pandaseq merging completed successfully."
 
 # Part 5 - Trimming
 log "Running cutadapt for trimming."
-cutadapt -j ${threads} -a ${adapter1} -a ${adapter2} -o ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged_trimmed.fasta ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged.fasta
-cutadapt -j ${threads} -a ${adapter1} -a ${adapter2} -o ${out_dir}/${library_name}_final_mapped_MAPQ42_merged_trimmed.fasta ${out_dir}/${library_name}_final_mapped_MAPQ42_merged.fasta
+cutadapt -j ${threads} -a ${adapter1} -a ${adapter2} -o ${out_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_merged_trimmed.fasta ${out_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_merged.fasta
+cutadapt -j ${threads} -a ${adapter1} -a ${adapter2} -o ${out_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_merged_trimmed.fasta ${out_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_merged.fasta
 if [ $? -ne 0 ]; then echo "ERROR: Cutadapt trimming failed."; exit 1; fi
 log "Cutadapt trimming completed successfully."
 
 # Part 6 - Python Code
 log "Running Python script for further analysis."
-python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
-python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_final_mapped_MAPQ42_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
-python3 ${SCRIPT_DIR}/logfitness_ALC1.py -s1 ${out_dir}/${library_name}_final_mapped_MAPQ42_merged_trimmed.WT_spike.RCPM -s2 ${out_dir}/${library_name}_initial_mapped_MAPQ42_merged_trimmed.WT_spike.RCPM -l ${library_name} --sequence ${library_aa_sequence} --output ${out_dir}
+python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
+python3 ${SCRIPT_DIR}/uniq_ALC1_codons.py -s ${out_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_merged_trimmed -l ${library_name} --sequence ${library_dna_sequence} --syn ${syn_codon} --wt ${wt_codon}
+python3 ${SCRIPT_DIR}/logfitness_ALC1.py -s1 ${out_dir}/${library_name}_final_mapped_MAPQ${quality_threshold}_merged_trimmed.WT_spike.RCPM -s2 ${out_dir}/${library_name}_initial_mapped_MAPQ${quality_threshold}_merged_trimmed.WT_spike.RCPM -l ${library_name} --sequence ${library_aa_sequence} --output ${out_dir}
 if [ $? -ne 0 ]; then echo "ERROR: Python script execution failed."; exit 1; fi
 
 # Check to see if the output files were created
-if [ ! -f ${out_dir}/diflog_${library_name}_final_mapped_MAPQ42_merged_trimmed.WT_spike.RCPM_${library_name}_initial_mapped_MAPQ42_merged_trimmed.WT_spike.RCPM.csv ]; then
+if [ ! -f ${out_dir}/diflog_${library_name}_final_mapped_MAPQ${quality_threshold}_merged_trimmed.WT_spike.RCPM_${library_name}_initial_mapped_MAPQ${quality_threshold}_merged_trimmed.WT_spike.RCPM.csv ]; then
     echo "ERROR: Output file not created."
     exit 1
 fi
